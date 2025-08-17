@@ -1,0 +1,67 @@
+name: Build Windows (WPF .NET 8)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}   # Permite ejecutar a mano desde la pestaña Actions
+  # Si quieres que también se cree una Release automática al publicar un tag vX.Y.Z,
+  # descomenta el bloque "release" del final y añade aquí:
+  # push:
+  #   tags:
+  #     - 'v*'
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore src/OperativaLogistica/OperativaLogistica.csproj
+
+      - name: Build (Release)
+        run: dotnet build src/OperativaLogistica/OperativaLogistica.csproj -c Release --no-restore
+
+      - name: Publish self-contained (win-x64, single file)
+        run: >
+          dotnet publish src/OperativaLogistica/OperativaLogistica.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
+          -o Publish/win-x64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OperativaLogistica-win-x64
+          path: Publish/win-x64
+
+  # --------- OPCIONAL: Release automática al crear un tag "v*" ----------
+  # release:
+  #   needs: build-win
+  #   if: startsWith(github.ref, 'refs/tags/')
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Download artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: OperativaLogistica-win-x64
+  #         path: Publish/win-x64
+  #     - name: Zip artifacts
+  #       run: powershell Compress-Archive -Path Publish/win-x64\* -DestinationPath OperativaLogistica-win-x64.zip
+  #     - name: Create GitHub Release
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         files: OperativaLogistica-win-x64.zip
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
