@@ -65,3 +65,4 @@ jobs:
   #         files: OperativaLogistica-win-x64.zip
   #       env:
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+src/OperativaLogistica/OperativaLogistica.csproj
